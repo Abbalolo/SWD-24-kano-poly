@@ -4,7 +4,7 @@ export const PREVIEW_COUNT = 4;
 
 export function getSiteUrl(): string {
   return (
-    process.env.NEXT_PUBLIC_SITE_URL ??
+   
     (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")
   );
 }

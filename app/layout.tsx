@@ -37,7 +37,7 @@ const caveat = localFont({
 });
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  window.location.origin ?? "http://localhost:3000";
 
 const SCHOOL_NAME = "Kano Polytechnic School of Technology";
 const SITE_NAME = "Class Memories";

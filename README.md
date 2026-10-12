@@ -23,7 +23,7 @@ Vercel.
 1. Push to GitHub.
 2. Import the repo on Vercel.
 3. Add the same three env vars in Vercel's project settings.
-4. Set `NEXT_PUBLIC_SITE_URL` to your production URL.
+4. Set `window.location.origin` to your production URL.
 5. Deploy.
 
 ## Stack
