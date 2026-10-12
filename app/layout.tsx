@@ -8,12 +8,12 @@ import { ToastProvider } from "@/components/ui/Toast";
 const fraunces = localFont({
   src: [
     {
-      path: "./fonts/Fraunces-Variable.woff2",
+      path: "./fonts/Fraunces-Variable.ttf",
       weight: "400 700",
       style: "normal",
     },
     {
-      path: "./fonts/Fraunces-Italic-Variable.woff2",
+      path: "./fonts/Fraunces-Italic-Variable.ttf",
       weight: "400 700",
       style: "italic",
     },
@@ -23,7 +23,7 @@ const fraunces = localFont({
 });
 
 const instrument = localFont({
-  src: "./fonts/InstrumentSans-Variable.woff2",
+  src: "./fonts/InstrumentSans-Variable.ttf",
   variable: "--font-instrument",
   weight: "400 600",
   display: "swap",
@@ -37,7 +37,8 @@ const caveat = localFont({
 });
 
 const SITE_URL =
-  window.location.origin ?? "http://localhost:3000";
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  "https://swd-24-kano-poly-jzgjfebzd-abbalolos-projects.vercel.app";
 
 const SCHOOL_NAME = "Kano Polytechnic School of Technology";
 const SITE_NAME = "Class Memories";
@@ -69,6 +70,7 @@ export const metadata: Metadata = {
     "Nigeria",
     "HND",
     "ND",
+    "SWD",
   ],
 
   icons: {
