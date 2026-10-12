@@ -1,5 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import {
+  createServerClient,
+  type CookieOptions,
+} from "@supabase/ssr";
+
+type CookieToSet = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
 
 export async function GET(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,13 +24,14 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const response = NextResponse.redirect(new URL(next, origin));
+
     const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookies) {
-          cookies.forEach(({ name, value, options }) => {
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
         },
