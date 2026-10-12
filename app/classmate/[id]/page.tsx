@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
 type Params = { params: Promise<{ id: string }> };
 
 async function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL! || process.env.SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! || process.env.SUPABASE_ANON_KEY!;
+  const url = process.env.SUPABASE_URL!;
+  const key = process.env.SUPABASE_ANON_KEY!;
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {
