@@ -19,8 +19,15 @@ type CookieToSet = {
 };
 
 async function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {
@@ -39,14 +46,22 @@ export default async function ClassmatePage({ params }: Params) {
   const { id } = await params;
   const supabase = await getSupabase();
 
-  const { data: person } = await supabase
+  // Debug: what does the server see?
+  const cookieStore = await cookies();
+  console.log(
+    "[classmate] cookies:",
+    cookieStore.getAll().map((c) => c.name)
+  );
+
+  const { data: person, error: personErr } = await supabase
     .from("classmates")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
-  // Only 404 if the row genuinely doesn't exist. An empty-name row is
-  // still a real classmate — they just haven't filled their page in yet.
+  console.log("[classmate] query error:", personErr?.message ?? "none");
+  console.log("[classmate] row found:", !!person);
+
   if (!person) {
     notFound();
   }
@@ -56,6 +71,8 @@ export default async function ClassmatePage({ params }: Params) {
       ? person.name
       : "A classmate";
 
+  // For prev/next, only include rows that have been filled in. Otherwise
+  // a visitor clicking "next" could land on a ghost page.
   const { data: list } = await supabase
     .from("classmates")
     .select("id")
