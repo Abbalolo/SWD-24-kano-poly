@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/lib/auth";
@@ -11,6 +12,22 @@ export default function Nav() {
   const { user, loading } = useUser();
   const pathname = usePathname();
   const { toast } = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile menu whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while the mobile menu is open.
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [menuOpen]);
 
   const linkBase =
     "text-sm tracking-wide transition-colors hover:text-[color:var(--color-primary)]";
@@ -32,12 +49,11 @@ export default function Nav() {
 
   return (
     <header className="border-b border-[color:var(--color-border)] bg-[color:var(--color-bg)]/80 backdrop-saturate-150">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-       
-
+      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-3 font-display text-xl font-semibold tracking-tight text-[color:var(--color-ink)]"
+          className="flex min-w-0 items-center gap-3 font-display text-lg font-semibold tracking-tight text-[color:var(--color-ink)] sm:text-xl"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -45,12 +61,13 @@ export default function Nav() {
             alt="Kano Polytechnic School of Technology"
             width={36}
             height={36}
-            className="h-9 w-9 object-contain"
+            className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9"
           />
-          <span> {SITE_NAME}</span>
+          <span className="truncate">{SITE_NAME}</span>
         </Link>
 
-        <div className="flex items-center gap-7">
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-7 md:flex">
           <Link href="/gallery" className={`${linkBase} ${isActive("/gallery")}`}>
             The class
           </Link>
@@ -84,7 +101,135 @@ export default function Nav() {
             </button>
           )}
         </div>
+
+        {/* Mobile menu button */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          className="flex h-10 w-10 items-center justify-center rounded-photo text-[color:var(--color-ink)] transition-colors hover:bg-[color:var(--color-primary-light)] md:hidden"
+        >
+          {menuOpen ? <CloseIcon /> : <MenuIcon />}
+        </button>
       </nav>
+
+      {/* Mobile menu panel */}
+      {menuOpen && (
+        <div
+          id="mobile-menu"
+          className="border-t border-[color:var(--color-border)] bg-[color:var(--color-bg)] md:hidden"
+        >
+          <div className="mx-auto flex max-w-6xl flex-col px-4 py-3 sm:px-6">
+            <MobileLink
+              href="/gallery"
+              active={pathname === "/gallery"}
+              onClick={() => setMenuOpen(false)}
+            >
+              The class
+            </MobileLink>
+
+            {!loading && user && (
+              <MobileLink
+                href="/add"
+                active={pathname === "/add"}
+                onClick={() => setMenuOpen(false)}
+              >
+                Edit my page
+              </MobileLink>
+            )}
+
+            {!loading && !user && (
+              <>
+                <MobileLink
+                  href="/login"
+                  active={pathname === "/login"}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Log in
+                </MobileLink>
+                <Link
+                  href="/signup"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-3 rounded-photo bg-[color:var(--color-primary)] px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-[color:var(--color-primary-dark)]"
+                >
+                  Add your memory
+                </Link>
+              </>
+            )}
+
+            {!loading && user && (
+              <button
+                onClick={handleSignOut}
+                className="mt-2 rounded-photo px-3 py-3 text-left text-sm text-[color:var(--color-ink-soft)] transition-colors hover:bg-[color:var(--color-primary-light)] hover:text-[color:var(--color-primary)]"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
+  );
+}
+
+function MobileLink({
+  href,
+  active,
+  onClick,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`rounded-photo px-3 py-3 text-sm tracking-wide transition-colors hover:bg-[color:var(--color-primary-light)] ${
+        active
+          ? "text-[color:var(--color-primary)]"
+          : "text-[color:var(--color-ink-soft)]"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
   );
 }
