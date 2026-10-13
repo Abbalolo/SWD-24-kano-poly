@@ -111,29 +111,25 @@ export default function ClassmateForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     setError(null);
-  
+
     const supabase = createClient();
-  
-    // Refresh the session so the request carries a valid JWT. If the token
-    // has expired, getSession() auto-refreshes it via the refresh token.
-    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+
+    // Grab a fresh session so the RPC definitely carries a valid JWT.
+    const { data: sessionData, error: sessionErr } =
+      await supabase.auth.getSession();
     const session = sessionData?.session;
-  
+
     if (sessionErr || !session?.user) {
       const msg = "Your session expired. Please log in again.";
       setError(msg);
       toast(msg, "error");
       return;
     }
-  
+
     const userId = session.user.id;
-    const accessToken = session.access_token;
-  
-    // Debug — remove after it works.
-    console.log("[save] auth.uid will be:", userId);
-    console.log("[save] token present:", !!accessToken);
-  
+
     const cleanName = name.trim();
     if (cleanName.length < 2) {
       const msg = "Please enter your name before saving.";
@@ -141,11 +137,12 @@ export default function ClassmateForm() {
       toast(msg, "error");
       return;
     }
-  
+
     setSubmitting(true);
     setProgressStep(0);
-  
+
     try {
+      // Start from existing URLs, then override based on clears + uploads.
       let primaryUrl: string | null = clearPrimary
         ? null
         : existing?.photo_url ?? null;
@@ -155,7 +152,8 @@ export default function ClassmateForm() {
       let memory2Url: string | null = clearMemory2
         ? null
         : existing?.photo_url_3 ?? null;
-  
+
+      // Upload photos in parallel.
       const uploads: Promise<void>[] = [];
       if (primaryFile) {
         uploads.push(
@@ -178,18 +176,26 @@ export default function ClassmateForm() {
           })
         );
       }
-  
+
       if (uploads.length > 0) {
         setProgressStep(0);
-        await Promise.all(uploads);
-        toast(
-          uploads.length === 1
-            ? "Photo uploaded."
-            : `${uploads.length} photos uploaded.`,
-          "success"
-        );
+        try {
+          await Promise.all(uploads);
+          toast(
+            uploads.length === 1
+              ? "Photo uploaded."
+              : `${uploads.length} photos uploaded.`,
+            "success"
+          );
+        } catch (upErr) {
+          const msg =
+            upErr instanceof Error ? upErr.message : "Upload failed.";
+          toast(`Photo upload failed: ${msg}`, "error");
+          throw upErr;
+        }
       }
-  
+
+      // Delete any cleared photos from storage.
       const deletions: {
         slot: "primary" | "memory-1" | "memory-2";
         label: string;
@@ -203,7 +209,7 @@ export default function ClassmateForm() {
       if (clearMemory2 && !memory2File) {
         deletions.push({ slot: "memory-2", label: "memory photo 2" });
       }
-  
+
       for (const d of deletions) {
         try {
           await deletePhoto(userId, d.slot);
@@ -215,47 +221,38 @@ export default function ClassmateForm() {
           throw delErr;
         }
       }
-  
+
       setProgressStep(1);
-  
-      const payload = {
-        user_id: userId,
-        name: cleanName,
-        email: email.trim(),
-        phone: phone.trim() || null,
-        bio: bio.trim() || null,
-        message: message.trim() || null,
-        photo_url: primaryUrl,
-        photo_url_2: memory1Url,
-        photo_url_3: memory2Url,
-        reg_number: regNumber.trim() || null,
-      };
-  
-      // Sanity check — if we don't have a token, the request will fail RLS.
-      if (!accessToken) {
-        toast("Couldn't save: no active session.", "error");
-        setSubmitting(false);
-        return;
+
+      // Save via the SECURITY DEFINER RPC. This bypasses RLS for the
+      // row-selection logic, and the function verifies auth.uid() itself.
+      const { data: newId, error: rpcErr } = await supabase.rpc(
+        "upsert_my_classmate",
+        {
+          p_name: cleanName,
+          p_email: email.trim(),
+          p_phone: phone.trim() || null,
+          p_bio: bio.trim() || null,
+          p_message: message.trim() || null,
+          p_photo_url: primaryUrl,
+          p_photo_url_2: memory1Url,
+          p_photo_url_3: memory2Url,
+          p_reg_number: regNumber.trim() || null,
+        }
+      );
+
+      if (rpcErr) {
+        console.error("[save] rpc error:", rpcErr);
+        toast(`Couldn't save your page: ${rpcErr.message}`, "error");
+        throw rpcErr;
       }
-  
-      const { data, error } = await supabase
-        .from("classmates")
-        .upsert(payload, { onConflict: "user_id" })
-        .select("id")
-        .single();
-  
-      if (error) {
-        console.error("[save] upsert error:", error);
-        toast(`Couldn't save your page: ${error.message}`, "error");
-        throw error;
-      }
-  
+
       toast(existing ? "Changes saved." : "You're in the archive.", "success");
-  
+
       setProgressStep(2);
       await new Promise((r) => setTimeout(r, 400));
-  
-      router.push(`/classmate/${data.id}`);
+
+      router.push(`/classmate/${newId}`);
       router.refresh();
     } catch (err) {
       const msg =
@@ -264,7 +261,7 @@ export default function ClassmateForm() {
       setSubmitting(false);
     }
   }
-  
+
   if (authLoading || loadingExisting) {
     return (
       <p className="text-sm text-[color:var(--color-ink-soft)]">Loading…</p>
