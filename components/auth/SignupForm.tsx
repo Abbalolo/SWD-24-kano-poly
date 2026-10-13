@@ -36,9 +36,8 @@ export default function SignupForm() {
     setLoading(true);
     const supabase = createClient();
 
-    // 1) Reserve the reg number in `classmates` BEFORE creating the auth
-    //    user. Uses an anon-callable RPC so we can enforce uniqueness
-    //    without granting anon a broad INSERT policy.
+    // 1) Reserve the reg number. No user_id, no name — just a placeholder
+    //    row so the number can't be taken by someone else mid-signup.
     const { data: reserved, error: reserveErr } = await supabase.rpc(
       "reserve_reg_number",
       { p_reg_number: reg }
@@ -70,6 +69,8 @@ export default function SignupForm() {
     });
 
     if (signUpErr || !signUpData.user) {
+      // Roll back the reservation so the number isn't held hostage.
+      await supabase.rpc("release_reg_number", { p_reg_number: reg });
       setLoading(false);
       const msg = signUpErr?.message ?? "Signup failed.";
       setError(msg);
@@ -77,7 +78,7 @@ export default function SignupForm() {
       return;
     }
 
-    // 3) Bind the reserved row to this auth user.
+    // 3) Bind the reserved row to the new auth user.
     const { error: bindErr } = await supabase.rpc("bind_reg_number_to_user", {
       p_reg_number: reg,
       p_user_id: signUpData.user.id,
@@ -108,6 +109,10 @@ export default function SignupForm() {
             {email}
           </span>
           . Click it, then log in with your registration number.
+        </p>
+        <p className="text-[15px] leading-[1.7] text-[color:var(--color-ink-soft)]">
+          After you log in, you'll add your name, photo, and a line about
+          yourself.
         </p>
       </div>
     );
@@ -155,7 +160,7 @@ export default function SignupForm() {
           className="mt-2 w-full rounded-photo border border-[color:var(--color-border)] bg-[color:var(--color-bg)] px-4 py-3 text-[15px] text-[color:var(--color-ink)] outline-none transition-colors focus:border-[color:var(--color-primary)]"
         />
         <p className="mt-2 text-xs text-[color:var(--color-ink-mute)]">
-          Used only for password recovery.
+          Used for password recovery.
         </p>
       </div>
 

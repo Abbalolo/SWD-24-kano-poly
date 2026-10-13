@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import ProfileHeader from "@/components/profile/ProfileHeader";
@@ -12,6 +12,12 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
+type CookieToSet = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
 async function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -22,8 +28,8 @@ async function getSupabase() {
       getAll() {
         return cookieStore.getAll();
       },
-      setAll() {
-        // read-only in server components
+      setAll(_cookiesToSet: CookieToSet[]) {
+        // Read-only in server components.
       },
     },
   });
@@ -39,7 +45,16 @@ export default async function ClassmatePage({ params }: Params) {
     .eq("id", id)
     .maybeSingle();
 
-  if (!person) notFound();
+  // Only 404 if the row genuinely doesn't exist. An empty-name row is
+  // still a real classmate — they just haven't filled their page in yet.
+  if (!person) {
+    notFound();
+  }
+
+  const displayName =
+    person.name && person.name.trim().length > 0
+      ? person.name
+      : "A classmate";
 
   const { data: list } = await supabase
     .from("classmates")
@@ -55,15 +70,15 @@ export default async function ClassmatePage({ params }: Params) {
   const photos = [
     {
       url: person.photo_url ? `${person.photo_url}?v=${v}` : null,
-      label: `${person.name} — primary photo`,
+      label: `${displayName} — primary photo`,
     },
     {
       url: person.photo_url_2 ? `${person.photo_url_2}?v=${v}` : null,
-      label: `${person.name} — memory 1`,
+      label: `${displayName} — memory 1`,
     },
     {
       url: person.photo_url_3 ? `${person.photo_url_3}?v=${v}` : null,
-      label: `${person.name} — memory 2`,
+      label: `${displayName} — memory 2`,
     },
   ];
 
@@ -85,7 +100,7 @@ export default async function ClassmatePage({ params }: Params) {
       </div>
 
       <ProfileHeader
-        name={person.name}
+        name={displayName}
         bio={person.bio}
         photoCount={photoCount}
         memberSince={memberSince}
@@ -101,7 +116,7 @@ export default async function ClassmatePage({ params }: Params) {
         />
 
         <aside className="space-y-4">
-          <ShareButton name={person.name} />
+          <ShareButton name={displayName} />
           <Link
             href="/add"
             className="block rounded-photo border border-[color:var(--color-border)] bg-[color:var(--color-paper)] px-5 py-3 text-center text-sm font-medium text-[color:var(--color-ink)] transition-colors hover:border-[color:var(--color-primary)] hover:text-[color:var(--color-primary)]"

@@ -112,9 +112,19 @@ export default function ClassmateForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+  
+    const cleanName = name.trim();
+    if (cleanName.length < 2) {
+      const msg = "Please enter your name before saving.";
+      setError(msg);
+      toast(msg, "error");
+      return;
+    }
+  
     setError(null);
     setSubmitting(true);
     setProgressStep(0);
+  
 
     try {
       let primaryUrl: string | null = clearPrimary

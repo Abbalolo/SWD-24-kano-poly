@@ -40,6 +40,7 @@ export default function GalleryPage() {
       const { data } = await supabase
         .from("classmates")
         .select("*")
+        .neq("name", "")
         .order("created_at", { ascending: true });
       if (!cancelled) {
         setRows((data as Classmate[]) ?? []);
@@ -127,9 +128,7 @@ export default function GalleryPage() {
         <p className="text-sm text-[color:var(--color-ink-soft)]">Loading…</p>
       ) : filtered.length === 0 ? (
         <div className="rounded-photo border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-paper)] p-12 text-center">
-          <p className="font-display text-2xl font-medium">
-            No one found.
-          </p>
+          <p className="font-display text-2xl font-medium">No one found.</p>
           <p className="mt-3 text-[15px] text-[color:var(--color-ink-soft)]">
             Try a different name, email, or reg number — or clear the search.
           </p>
