@@ -18,6 +18,7 @@ export type Classmate = {
   photo_url: string | null;
   photo_url_2: string | null;
   photo_url_3: string | null;
+  reg_number: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -84,17 +85,19 @@ export default function GalleryPage() {
   const filtered = rows
     .filter((r) => {
       if (!query.trim()) return true;
-      const q = query.toLowerCase();
+      const q = query.toLowerCase().trim();
       return (
         r.name.toLowerCase().includes(q) ||
         r.email.toLowerCase().includes(q) ||
-        (r.bio ?? "").toLowerCase().includes(q)
+        (r.reg_number ?? "").toLowerCase().includes(q)
       );
     })
     .sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "newest")
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     });
 
@@ -124,9 +127,11 @@ export default function GalleryPage() {
         <p className="text-sm text-[color:var(--color-ink-soft)]">Loading…</p>
       ) : filtered.length === 0 ? (
         <div className="rounded-photo border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-paper)] p-12 text-center">
-          <p className="font-display text-2xl font-medium">No one found.</p>
+          <p className="font-display text-2xl font-medium">
+            No one found.
+          </p>
           <p className="mt-3 text-[15px] text-[color:var(--color-ink-soft)]">
-            Try a different name or clear the search.
+            Try a different name, email, or reg number — or clear the search.
           </p>
         </div>
       ) : (

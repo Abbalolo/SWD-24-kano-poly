@@ -10,6 +10,7 @@ export type GalleryRow = {
   bio: string | null;
   message: string | null;
   photo_url: string | null;
+  reg_number: string | null;
   updated_at: string;
 };
 
@@ -42,6 +43,11 @@ export default function GalleryCard({ row }: { row: GalleryRow }) {
           <h3 className="font-display text-xl font-medium leading-tight text-[color:var(--color-ink)]">
             {row.name}
           </h3>
+          {row.reg_number && (
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[color:var(--color-primary)]">
+              {row.reg_number}
+            </p>
+          )}
           <p className="mt-1.5 text-xs uppercase tracking-[0.14em] text-[color:var(--color-ink-mute)]">
             {row.email}
           </p>
